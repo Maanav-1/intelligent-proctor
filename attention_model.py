@@ -24,3 +24,4 @@ class TemporalAttentionModel:
         if not self.attention_window:
             return 1.0
         return np.mean(self.attention_window)
+    
