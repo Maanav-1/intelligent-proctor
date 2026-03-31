@@ -1,7 +1,6 @@
 import cv2
 import mediapipe as mp
 import numpy as np
-import math
 
 class HeadPoseEstimator:
     def __init__(self, image_width, image_height):
@@ -28,19 +27,38 @@ class HeadPoseEstimator:
             (150.0, -150.0, -125.0)      
         ], dtype=np.float64)
 
+        # Calibration state
+        self.calibrated = False
+        self.calibration_pitches = []
+        self.calibration_yaws = []
+        self.baseline_pitch = 0.0
+        self.baseline_yaw = 0.0
+
+    def calibrate(self, pitch, yaw):
+        """Collect samples during calibration phase."""
+        self.calibration_pitches.append(pitch)
+        self.calibration_yaws.append(yaw)
+
+    def finish_calibration(self):
+        """Lock in the baseline from collected samples."""
+        if len(self.calibration_pitches) > 0:
+            self.baseline_pitch = np.median(self.calibration_pitches)
+            self.baseline_yaw = np.median(self.calibration_yaws)
+        self.calibrated = True
+        print(f"[✓] Calibration complete — Baseline Pitch: {self.baseline_pitch:.1f}, Yaw: {self.baseline_yaw:.1f}")
+
     def process_frame(self, frame):
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = self.face_mesh.process(rgb_frame)
         
         h, w, _ = frame.shape
         pitch, yaw, roll = 0.0, 0.0, 0.0
-        landmarks_extracted = False
+        face_detected = False
 
         if results.multi_face_landmarks:
             for face in results.multi_face_landmarks:
-                landmarks_extracted = True
+                face_detected = True
                 
-                # PnP Head Pose (No EAR)
                 points_2d = np.array([
                     (face.landmark[1].x * w, face.landmark[1].y * h),       
                     (face.landmark[152].x * w, face.landmark[152].y * h),   
@@ -58,6 +76,14 @@ class HeadPoseEstimator:
                     rotation_matrix, _ = cv2.Rodrigues(rotation_vector)
                     proj_matrix = np.hstack((rotation_matrix, translation_vector))
                     euler_angles = cv2.decomposeProjectionMatrix(proj_matrix)[6]
-                    pitch, yaw, roll = euler_angles.flatten() # Values are already in degrees!
+                    raw_pitch, raw_yaw, roll = euler_angles.flatten()
 
-        return landmarks_extracted, pitch, yaw, roll
+                    # Extract scalar values
+                    raw_pitch = float(raw_pitch[0]) if isinstance(raw_pitch, np.ndarray) else float(raw_pitch)
+                    raw_yaw = float(raw_yaw[0]) if isinstance(raw_yaw, np.ndarray) else float(raw_yaw)
+
+                    # Subtract baseline so "looking straight" → ~0
+                    pitch = raw_pitch - self.baseline_pitch
+                    yaw = raw_yaw - self.baseline_yaw
+
+        return face_detected, pitch, yaw, roll

@@ -13,7 +13,8 @@ class BehaviorAnalyzer:
         
         # Time-based tracking for looking away
         self.looking_away_start_time = None
-        self.grace_period = 2.0 # Allow 2 seconds of looking away before flagging
+        self.grace_period = 2.0
+        self.already_flagged = False  # NEW: prevents re-flagging every frame
 
     def start_session(self, mode):
         self.mode = mode
@@ -22,6 +23,7 @@ class BehaviorAnalyzer:
         self.total_frames = 0
         self.focused_frames = 0
         self.looking_away_start_time = None
+        self.already_flagged = False
         print(f"--- Session Started: {self.mode} Mode ---")
 
     def classify_state(self, pitch, yaw, face_detected, phone_detected, book_detected, people_count):
@@ -29,24 +31,34 @@ class BehaviorAnalyzer:
         state = "FOCUSED"
         
         if not face_detected:
+            # Reset gaze timer when face is lost
+            self.looking_away_start_time = None
+            self.already_flagged = False
             return "USER_MISSING"
 
-        # 1. Evaluate Head Pose (Timer Logic)
-        # If looking left/right > 20 deg, or up/down > 20 deg
-        is_looking_away = abs(yaw) > 20 or abs(pitch) > 20
+        # 1. Evaluate Head Pose with timer + single-flag logic
+        is_looking_away = abs(yaw) > 25  # Only left/right head turn matters
         
         if is_looking_away:
-            # Start timer if it hasn't started
             if self.looking_away_start_time is None:
+                # Just started looking away — begin timer
                 self.looking_away_start_time = time.time()
                 state = "WARNING: GAZE DEVIATING..."
-            # Flag violation if timer exceeds grace period
-            elif (time.time() - self.looking_away_start_time) > self.grace_period:
+            elif not self.already_flagged and (time.time() - self.looking_away_start_time) > self.grace_period:
+                # Timer exceeded AND we haven't flagged this event yet
                 state = "VIOLATION: LOOKING_AWAY" if self.mode == "PROCTOR" else "DISTRACTED: GAZE_OFF"
                 self.violations["LOOKING_AWAY"] += 1
+                self.already_flagged = True  # Only count ONCE per look-away event
+            elif self.already_flagged:
+                # Still looking away after being flagged — show state but don't re-count
+                state = "VIOLATION: LOOKING_AWAY" if self.mode == "PROCTOR" else "DISTRACTED: GAZE_OFF"
+            else:
+                # Within grace period
+                state = "WARNING: GAZE DEVIATING..."
         else:
-            # Looked back at screen -> reset timer
-            self.looking_away_start_time = None 
+            # User looked back — reset everything for the next event
+            self.looking_away_start_time = None
+            self.already_flagged = False
 
         # 2. Hard Object Violations (Overrides head pose)
         if self.mode == "PROCTOR":

@@ -20,19 +20,54 @@ def main():
     print("Loading Custom Vision Model (best.pt)...")
     vision_model = YOLO("best.pt") 
 
-    # Start the session immediately (No 10s calibration)
+    # ========== CALIBRATION PHASE (3 seconds) ==========
+    print("\n[*] CALIBRATION: Look straight at the screen for 3 seconds...")
+    cal_start = time.time()
+    cal_duration = 3.0
+
+    while cap.isOpened() and (time.time() - cal_start) < cal_duration:
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        face_detected, pitch, yaw, roll = pose_estimator.process_frame(frame)
+        
+        # Extract scalars
+        pitch_val = float(pitch[0]) if isinstance(pitch, np.ndarray) else float(pitch)
+        yaw_val = float(yaw[0]) if isinstance(yaw, np.ndarray) else float(yaw)
+
+        if face_detected:
+            pose_estimator.calibrate(pitch_val, yaw_val)
+
+        # Show calibration countdown on screen
+        remaining = cal_duration - (time.time() - cal_start)
+        cv2.putText(frame, "CALIBRATING: Look at the screen", (20, 40),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
+        cv2.putText(frame, f"Starting in {remaining:.1f}s...", (20, 80),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+        cv2.putText(frame, f"Raw Pitch: {pitch_val:.1f}  Raw Yaw: {yaw_val:.1f}", (20, height - 20),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 1)
+        cv2.imshow("Intelligent Monitor", frame)
+        if cv2.waitKey(1) & 0xFF == 27:
+            cap.release()
+            cv2.destroyAllWindows()
+            return
+
+    pose_estimator.finish_calibration()
+    # ===================================================
+
     analyzer.start_session(mode)
 
     while cap.isOpened():
         ret, frame = cap.read()
-        if not ret: break
+        if not ret:
+            break
 
-        # 1. Process Head Pose
+        # 1. Process Head Pose (now returns calibrated values)
         face_detected, pitch, yaw, roll = pose_estimator.process_frame(frame)
         
-        # Ensure values are single floats, not arrays
-        pitch_val = pitch[0] if isinstance(pitch, np.ndarray) else pitch
-        yaw_val = yaw[0] if isinstance(yaw, np.ndarray) else yaw
+        pitch_val = float(pitch[0]) if isinstance(pitch, np.ndarray) else float(pitch)
+        yaw_val = float(yaw[0]) if isinstance(yaw, np.ndarray) else float(yaw)
 
         # 2. Process YOLO Vision
         phone_detected, book_detected, people_count = False, False, 0
@@ -63,18 +98,19 @@ def main():
         else:
             focus_score = (analyzer.focused_frames / analyzer.total_frames * 100) if analyzer.total_frames > 0 else 0
             cv2.putText(frame, f"LIVE FOCUS SCORE: {focus_score:.1f}%", (20, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
-            
             y_offset += 30
             cv2.putText(frame, f"Distractions (Phone): {analyzer.violations['PHONE']}", (20, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
-            
             y_offset += 30
             cv2.putText(frame, f"Distractions (Gaze Off): {analyzer.violations['LOOKING_AWAY']}", (20, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
 
+        # Debug: show calibrated pitch/yaw so you can verify
+        cv2.putText(frame, f"Pitch: {pitch_val:.1f}  Yaw: {yaw_val:.1f}", (20, height - 20),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
+
         cv2.imshow("Intelligent Monitor", frame)
-        if cv2.waitKey(1) & 0xFF == 27: # ESC to quit
+        if cv2.waitKey(1) & 0xFF == 27:
             break
 
-    # Save and Print Report
     print(analyzer.get_session_report())
     analyzer.save_report()
 
