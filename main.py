@@ -6,76 +6,77 @@ from head_pose import HeadPoseEstimator
 from behavior_analyzer import BehaviorAnalyzer
 
 def main():
+    print("Select Mode: (1) Proctor Mode | (2) Deep Work Mode")
+    choice = input("Enter 1 or 2: ")
+    mode = "PROCTOR" if choice == '1' else "DEEP_WORK"
+
     cap = cv2.VideoCapture(0)
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     
-    # Initialize Core Components
     pose_estimator = HeadPoseEstimator(width, height)
-    behavior_analyzer = BehaviorAnalyzer()
+    analyzer = BehaviorAnalyzer()
     
-    # Load YOLOv8 (Currently using the nano model. Once you train your custom model on Colab, 
-    # change 'yolov8n.pt' to 'best.pt')
-    print("Loading Vision Model...")
-    vision_model = YOLO("yolov8n.pt") 
+    print("Loading Custom Vision Model (best.pt)...")
+    vision_model = YOLO("best.pt") 
 
-    # Calibration Variables
-    calibration_duration = 10 # seconds
-    calibration_data = []
-    start_time = time.time()
-    calibrating = True
-
-    print("Starting Intelligent Proctor & Productivity Monitor...")
+    # Start the session immediately (No 10s calibration)
+    analyzer.start_session(mode)
 
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret: break
 
-        # 1. Vision & Pose Extraction
-        face_detected, pitch, yaw, roll, left_ear, right_ear = pose_estimator.process_frame(frame)
-        current_features = [pitch[0] if isinstance(pitch, np.ndarray) else pitch, 
-                            yaw[0] if isinstance(yaw, np.ndarray) else yaw, 
-                            left_ear, right_ear]
+        # 1. Process Head Pose
+        face_detected, pitch, yaw, roll = pose_estimator.process_frame(frame)
+        
+        # Ensure values are single floats, not arrays
+        pitch_val = pitch[0] if isinstance(pitch, np.ndarray) else pitch
+        yaw_val = yaw[0] if isinstance(yaw, np.ndarray) else yaw
 
-        phone_detected = False
-        people_count = 0
-
-        # Run YOLO inference
+        # 2. Process YOLO Vision
+        phone_detected, book_detected, people_count = False, False, 0
         results = vision_model(frame, verbose=False)[0]
+        
         for box in results.boxes:
-            class_id = int(box.cls[0])
-            # Default YOLO classes: 0 is person, 67 is cell phone
-            if class_id == 0: people_count += 1
-            if class_id == 67: phone_detected = True
+            cid = int(box.cls[0])
+            conf = float(box.conf[0])
+            if conf > 0.4:
+                if cid == 4 or cid == 1: people_count += 1 
+                if cid == 3: phone_detected = True 
+                if cid == 0: book_detected = True 
 
-        # 2. Calibration Phase Logic
-        if calibrating:
-            elapsed_time = time.time() - start_time
-            remaining_time = int(calibration_duration - elapsed_time)
-            
-            cv2.putText(frame, f"CALIBRATION PHASE: Stare at screen", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
-            cv2.putText(frame, f"Time remaining: {remaining_time}s", (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
-            
-            if face_detected:
-                calibration_data.append(current_features)
-                
-            if elapsed_time > calibration_duration:
-                behavior_analyzer.calibrate(calibration_data)
-                calibrating = False
-
-        # 3. Active Monitoring Logic
+        # 3. Classify Behavior
+        current_state = analyzer.classify_state(pitch_val, yaw_val, face_detected, phone_detected, book_detected, people_count)
+        
+        # 4. Render UI
+        color = (0, 255, 0) if "FOCUSED" in current_state else (0, 165, 255) if "WARNING" in current_state else (0, 0, 255)
+        cv2.putText(frame, f"STATE: {current_state}", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
+        
+        y_offset = 80
+        if mode == "PROCTOR":
+            cv2.putText(frame, "LIVE VIOLATION TALLY:", (20, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 165, 255), 2)
+            for v_type, count in analyzer.violations.items():
+                if count > 0:
+                    y_offset += 30
+                    cv2.putText(frame, f"{v_type}: {count}", (30, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
         else:
-            current_state = behavior_analyzer.classify_state(current_features, face_detected, phone_detected, people_count)
+            focus_score = (analyzer.focused_frames / analyzer.total_frames * 100) if analyzer.total_frames > 0 else 0
+            cv2.putText(frame, f"LIVE FOCUS SCORE: {focus_score:.1f}%", (20, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
             
-            # UI Rendering
-            color = (0, 255, 0) if current_state == "FOCUSED" else (0, 0, 255)
-            cv2.putText(frame, f"State: {current_state}", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
-            if face_detected:
-                cv2.putText(frame, f"EAR: {(left_ear+right_ear)/2:.2f} | Yaw: {current_features[1]:.1f}", (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 200), 1)
+            y_offset += 30
+            cv2.putText(frame, f"Distractions (Phone): {analyzer.violations['PHONE']}", (20, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+            
+            y_offset += 30
+            cv2.putText(frame, f"Distractions (Gaze Off): {analyzer.violations['LOOKING_AWAY']}", (20, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
 
-        cv2.imshow("Monitor Dashboard", frame)
+        cv2.imshow("Intelligent Monitor", frame)
         if cv2.waitKey(1) & 0xFF == 27: # ESC to quit
             break
+
+    # Save and Print Report
+    print(analyzer.get_session_report())
+    analyzer.save_report()
 
     cap.release()
     cv2.destroyAllWindows()
