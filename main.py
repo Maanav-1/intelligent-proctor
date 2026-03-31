@@ -91,17 +91,18 @@ def main():
         y_offset = 80
         if mode == "PROCTOR":
             cv2.putText(frame, "LIVE VIOLATION TALLY:", (20, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 165, 255), 2)
-            for v_type, count in analyzer.violations.items():
-                if count > 0:
+            for v_type in ["PHONE", "BOOK", "MULTIPLE_PEOPLE", "LOOKING_AWAY"]:
+                events = analyzer.violation_events[v_type]
+                if events > 0:
                     y_offset += 30
-                    cv2.putText(frame, f"{v_type}: {count}", (30, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+                    cv2.putText(frame, f"{v_type}: {events} time(s)", (30, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
         else:
             focus_score = (analyzer.focused_frames / analyzer.total_frames * 100) if analyzer.total_frames > 0 else 0
             cv2.putText(frame, f"LIVE FOCUS SCORE: {focus_score:.1f}%", (20, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
             y_offset += 30
-            cv2.putText(frame, f"Distractions (Phone): {analyzer.violations['PHONE']}", (20, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+            cv2.putText(frame, f"Distractions (Phone): {analyzer.violation_events['PHONE']} time(s)", (20, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
             y_offset += 30
-            cv2.putText(frame, f"Distractions (Gaze Off): {analyzer.violations['LOOKING_AWAY']}", (20, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+            cv2.putText(frame, f"Distractions (Gaze Off): {analyzer.violation_events['LOOKING_AWAY']} time(s)", (20, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
 
         # Debug: show calibrated pitch/yaw so you can verify
         cv2.putText(frame, f"Pitch: {pitch_val:.1f}  Yaw: {yaw_val:.1f}", (20, height - 20),
