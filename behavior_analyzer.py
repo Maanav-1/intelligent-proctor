@@ -233,7 +233,6 @@ class BehaviorAnalyzer:
         report = f"==========================================\n"
         report += f"         {self.mode} SESSION REPORT       \n"
         report += f"==========================================\n"
-        report += f"User: Maanav Chellani\n"
         report += f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
         report += f"Total Duration: {mins} minutes, {secs} seconds\n"
         report += f"Total Frames Processed: {self.total_frames}\n"
@@ -281,29 +280,37 @@ class BehaviorAnalyzer:
             print(f"[+] Focus Graph saved to: {graph_filename}")
 
     def _generate_graph(self, filename):
-        times = [p["elapsed_sec"] for p in self.time_series]
         focus = [p["focus_pct"] for p in self.time_series]
-        phones = [p["elapsed_sec"] for p in self.time_series if p["phone_detected"]]
-        gaze_offs = [p["elapsed_sec"] for p in self.time_series if p["gaze_off"]]
+        phone_indices = [i for i, p in enumerate(self.time_series) if p["phone_detected"]]
+        gaze_indices = [i for i, p in enumerate(self.time_series) if p["gaze_off"]]
 
-        # Convert to minutes for readability
-        times_min = [t / 60 for t in times]
-        phones_min = [t / 60 for t in phones]
-        gaze_offs_min = [t / 60 for t in gaze_offs]
+        total_sec = len(focus)
+        use_minutes = total_sec > 120  # Switch to minutes if session > 2 min
+
+        if use_minutes:
+            x = [i / 60 for i in range(total_sec)]
+            phone_x = [i / 60 for i in phone_indices]
+            gaze_x = [i / 60 for i in gaze_indices]
+            x_label = "Time (minutes)"
+        else:
+            x = list(range(total_sec))
+            phone_x = phone_indices
+            gaze_x = gaze_indices
+            x_label = "Time (seconds)"
 
         fig, ax = plt.subplots(figsize=(12, 5))
         
-        ax.plot(times_min, focus, color='#4CAF50', linewidth=2, label='Focus %')
-        ax.fill_between(times_min, focus, alpha=0.15, color='#4CAF50')
+        ax.plot(x, focus, color='#4CAF50', linewidth=2, label='Focus %')
+        ax.fill_between(x, focus, alpha=0.15, color='#4CAF50')
 
-        if phones_min:
-            ax.scatter(phones_min, [0] * len(phones_min), color='red', marker='^', 
+        if phone_x:
+            ax.scatter(phone_x, [0] * len(phone_x), color='red', marker='^', 
                        s=60, label='Phone Detected', zorder=5)
-        if gaze_offs_min:
-            ax.scatter(gaze_offs_min, [0] * len(gaze_offs_min), color='orange', marker='v', 
+        if gaze_x:
+            ax.scatter(gaze_x, [0] * len(gaze_x), color='orange', marker='v', 
                        s=60, label='Gaze Off', zorder=5)
 
-        ax.set_xlabel("Time (minutes)", fontsize=12)
+        ax.set_xlabel(x_label, fontsize=12)
         ax.set_ylabel("Focus %", fontsize=12)
         ax.set_title("Deep Work Session — Focus Over Time", fontsize=14, fontweight='bold')
         ax.set_ylim(-5, 105)

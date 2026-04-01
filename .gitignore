@@ -19,4 +19,4 @@ Thumbs.db
 session_reports/
 
 
-*.pt
+# *.pt
