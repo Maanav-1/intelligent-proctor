@@ -45,7 +45,7 @@ class HeadPoseEstimator:
             self.baseline_pitch = np.median(self.calibration_pitches)
             self.baseline_yaw = np.median(self.calibration_yaws)
         self.calibrated = True
-        print(f"[✓] Calibration complete — Baseline Pitch: {self.baseline_pitch:.1f}, Yaw: {self.baseline_yaw:.1f}")
+        print(f"Calibration complete — Baseline Pitch: {self.baseline_pitch:.1f}, Yaw: {self.baseline_yaw:.1f}")
 
     def process_frame(self, frame):
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -82,7 +82,7 @@ class HeadPoseEstimator:
                     raw_pitch = float(raw_pitch[0]) if isinstance(raw_pitch, np.ndarray) else float(raw_pitch)
                     raw_yaw = float(raw_yaw[0]) if isinstance(raw_yaw, np.ndarray) else float(raw_yaw)
 
-                    # Subtract baseline so "looking straight" → ~0
+                    # Subtract baseline so "looking straight" -> ~0
                     pitch = raw_pitch - self.baseline_pitch
                     yaw = raw_yaw - self.baseline_yaw
 

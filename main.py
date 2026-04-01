@@ -17,7 +17,7 @@ def main():
     pose_estimator = HeadPoseEstimator(width, height)
     analyzer = BehaviorAnalyzer()
     
-    print("Loading Custom Vision Model (best.pt)...")
+    print("Loading Model (best.pt)...")
     vision_model = YOLO("best.pt") 
 
     # ========== CALIBRATION PHASE (3 seconds) ==========
@@ -104,7 +104,7 @@ def main():
             y_offset += 30
             cv2.putText(frame, f"Distractions (Gaze Off): {analyzer.violation_events['LOOKING_AWAY']} time(s)", (20, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
 
-        # Debug: show calibrated pitch/yaw so you can verify
+        
         cv2.putText(frame, f"Pitch: {pitch_val:.1f}  Yaw: {yaw_val:.1f}", (20, height - 20),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
 
