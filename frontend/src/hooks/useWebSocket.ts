@@ -17,6 +17,7 @@ export interface Metrics {
 
 export function useWebSocket() {
   const wsRef = useRef<WebSocket | null>(null);
+  const isProcessingRef = useRef(false);
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [connected, setConnected] = useState(false);
 
@@ -31,6 +32,7 @@ export function useWebSocket() {
       };
 
       ws.onmessage = (event) => {
+        isProcessingRef.current = false;
         try {
           const data: Metrics = JSON.parse(event.data);
           setMetrics(data);
@@ -40,11 +42,13 @@ export function useWebSocket() {
       };
 
       ws.onerror = (e) => {
+        isProcessingRef.current = false;
         console.error('WebSocket error:', e);
         reject(e);
       };
 
       ws.onclose = () => {
+        isProcessingRef.current = false;
         setConnected(false);
         wsRef.current = null;
       };
@@ -62,9 +66,10 @@ export function useWebSocket() {
 
   const sendFrame = useCallback((b64: string) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      isProcessingRef.current = true;
       wsRef.current.send(JSON.stringify({ type: 'frame', data: b64 }));
     }
   }, []);
 
-  return { metrics, connected, connect, disconnect, sendFrame };
+  return { metrics, connected, connect, disconnect, sendFrame, isProcessingRef };
 }

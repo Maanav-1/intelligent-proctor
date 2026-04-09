@@ -5,7 +5,6 @@ import type { Metrics } from '../hooks/useWebSocket';
 import './Session.css';
 
 const API_BASE = 'http://127.0.0.1:8000';
-const FRAME_INTERVAL_MS = 83; // ~12 FPS
 
 interface Props {
   mode: 'PROCTOR' | 'DEEP_WORK';
@@ -43,7 +42,7 @@ const DEEPWORK_VIOLATIONS = [
 export function Session({ mode, onSessionEnd, onBack }: Props) {
   const camera = useCamera();
   const ws = useWebSocket();
-  const intervalRef = useRef<number | null>(null);
+  const frameIdRef = useRef<number | null>(null);
   const startedRef = useRef(false);
 
   // Start session
@@ -52,41 +51,64 @@ export function Session({ mode, onSessionEnd, onBack }: Props) {
     startedRef.current = true;
 
     (async () => {
-      // 1. Start camera
-      await camera.start();
+      try {
+        // 1. Start camera
+        await camera.start();
 
-      // 2. Start session on backend
-      await fetch(`${API_BASE}/session/start`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode }),
-      });
+        // 2. Clean up any stale session on the backend first
+        await fetch(`${API_BASE}/session/stop`, { method: 'POST' }).catch(() => {});
 
-      // 3. Open WebSocket
-      await ws.connect();
+        // 3. Start session on backend
+        const res = await fetch(`${API_BASE}/session/start`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode }),
+        });
+
+        if (!res.ok) {
+          throw new Error(`Backend returned ${res.status}`);
+        }
+
+        // 4. Open WebSocket
+        await ws.connect();
+      } catch (e) {
+        console.error('Failed to start session:', e);
+      }
     })();
 
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (frameIdRef.current) cancelAnimationFrame(frameIdRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Frame capture loop — start when both camera and WS are ready
   useEffect(() => {
-    if (camera.isActive && ws.connected && !intervalRef.current) {
-      intervalRef.current = window.setInterval(() => {
+    const loop = () => {
+      if (!ws.isProcessingRef.current) {
         const frame = camera.captureFrame();
         if (frame) ws.sendFrame(frame);
-      }, FRAME_INTERVAL_MS);
+      }
+      frameIdRef.current = requestAnimationFrame(loop);
+    };
+
+    if (camera.isActive && ws.connected && !frameIdRef.current) {
+      frameIdRef.current = requestAnimationFrame(loop);
     }
-  }, [camera.isActive, ws.connected, camera.captureFrame, ws.sendFrame]);
+
+    return () => {
+      if (frameIdRef.current) {
+        cancelAnimationFrame(frameIdRef.current);
+        frameIdRef.current = null;
+      }
+    };
+  }, [camera.isActive, ws.connected, camera, ws]);
 
   const handleStop = useCallback(async () => {
     // Stop frame loop
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+    if (frameIdRef.current) {
+      cancelAnimationFrame(frameIdRef.current);
+      frameIdRef.current = null;
     }
 
     // Stop camera

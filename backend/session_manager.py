@@ -74,10 +74,19 @@ class SessionManager:
 
         self.last_report = report
 
+        # Explicitly release MediaPipe resources before reset
+        if self.pose_estimator is not None:
+            try:
+                self.pose_estimator.face_mesh.close()
+            except Exception:
+                pass
+
         # Reset
         self.session_id = None
         self.mode = None
         self.calibrating = False
+        self.analyzer = None
+        self.pose_estimator = None
         return report
 
     @property

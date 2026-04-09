@@ -11,9 +11,11 @@ function App() {
   const [mode, setMode] = useState<'PROCTOR' | 'DEEP_WORK'>('PROCTOR');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [report, setReport] = useState<any>(null);
+  const [sessionKey, setSessionKey] = useState(0);
 
   const handleModeSelect = (selectedMode: 'PROCTOR' | 'DEEP_WORK') => {
     setMode(selectedMode);
+    setSessionKey((k) => k + 1);
     setPhase('session');
   };
 
@@ -33,6 +35,7 @@ function App() {
 
       {phase === 'session' && (
         <Session
+          key={sessionKey}
           mode={mode}
           onSessionEnd={handleSessionEnd}
           onBack={handleNewSession}
