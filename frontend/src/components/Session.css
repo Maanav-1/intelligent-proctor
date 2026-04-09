@@ -1,19 +1,23 @@
 /* ============================================
-   Session — Live monitoring view
+   Session — Live monitoring view, no-scroll
    ============================================ */
 
 .session {
-  padding: 40px 0 80px;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* ---- Top bar ---- */
 .session__top {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  margin-bottom: 32px;
-  padding-bottom: 16px;
+  padding: 12px 24px;
   border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
 .session__mode-label {
@@ -41,15 +45,19 @@
   color: #fff;
 }
 
-/* ---- Camera ---- */
+/* ---- Body: camera + sidebar ---- */
+.session__body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  overflow: hidden;
+}
+
+/* ---- Camera pane ---- */
 .session__camera {
   position: relative;
-  width: 100%;
-  aspect-ratio: 4 / 3;
   background: #000;
-  border-radius: 4px;
   overflow: hidden;
-  margin-bottom: 32px;
 }
 
 .session__video {
@@ -146,34 +154,60 @@
   margin-top: 8px;
 }
 
-/* ---- Metrics panel ---- */
+/* ---- Sidebar metrics panel ---- */
 .session__metrics {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  border-left: 1px solid var(--border);
+  overflow: hidden;
 }
 
 .session__metrics-header {
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--text-tertiary);
-  margin-bottom: 12px;
+  padding: 16px 20px 10px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+/* ---- Focus score (deep work) ---- */
+.session__focus-score {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.session__focus-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+}
+
+.session__focus-value {
+  font-family: var(--font-mono);
+  font-size: 2rem;
+  font-weight: 600;
+  letter-spacing: -1px;
 }
 
 /* ---- Violations table ---- */
 .session__violations {
-  border-top: 1px solid var(--border);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .session__violation-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px 0;
+  padding: 14px 20px;
   border-bottom: 1px solid var(--border);
-  font-size: 0.95rem;
+  font-size: 0.85rem;
+  flex: 1;
 }
 
 .session__violation-label {
@@ -187,43 +221,27 @@
   font-weight: 600;
   min-width: 32px;
   text-align: right;
+  color: var(--text-tertiary);
 }
 
 .session__violation-count--active {
   color: var(--red);
 }
 
-/* ---- Focus score (deep work) ---- */
-.session__focus-score {
-  padding: 24px 0;
-  border-bottom: 1px solid var(--border);
-  border-top: 1px solid var(--border);
-  margin-bottom: 0;
-}
-
-.session__focus-label {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  margin-bottom: 4px;
-}
-
-.session__focus-value {
-  font-family: var(--font-mono);
-  font-size: 2.2rem;
-  font-weight: 600;
-  letter-spacing: -1px;
-}
-
 /* ---- Camera error ---- */
 .session__error {
-  padding: 48px 0;
-  text-align: center;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  padding: 40px;
 }
 
 .session__error-text {
   color: var(--red);
   font-size: 0.95rem;
-  margin-bottom: 16px;
 }
 
 .session__error-btn {
@@ -233,14 +251,4 @@
   cursor: pointer;
   background: none;
   border: none;
-}
-
-@media (max-width: 480px) {
-  .session {
-    padding: 24px 0 60px;
-  }
-
-  .session__top {
-    margin-bottom: 20px;
-  }
 }

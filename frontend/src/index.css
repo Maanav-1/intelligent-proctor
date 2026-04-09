@@ -37,6 +37,8 @@ html {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  height: 100%;
+  overflow: hidden;
 }
 
 body {
@@ -45,7 +47,8 @@ body {
   background: var(--bg);
   color: var(--text);
   line-height: 1.6;
-  min-height: 100vh;
+  height: 100%;
+  overflow: hidden;
 }
 
 h1, h2, h3, h4 {
@@ -55,7 +58,8 @@ h1, h2, h3, h4 {
 }
 
 #root {
-  min-height: 100vh;
+  height: 100%;
+  overflow: hidden;
 }
 
 /* ---- Utility ---- */
@@ -76,10 +80,4 @@ button {
   cursor: pointer;
   border: none;
   background: none;
-}
-
-@media (max-width: 600px) {
-  html {
-    font-size: 15px;
-  }
 }

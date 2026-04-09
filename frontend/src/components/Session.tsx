@@ -157,72 +157,76 @@ export function Session({ mode, onSessionEnd, onBack }: Props) {
         </button>
       </div>
 
-      {/* Camera feed */}
-      <div className="session__camera">
-        <video ref={camera.videoRef} className="session__video" muted playsInline />
-        <canvas ref={camera.canvasRef} className="session__canvas" />
+      {/* Body: camera left, sidebar right */}
+      <div className="session__body">
+        {/* Camera feed */}
+        <div className="session__camera">
+          <video ref={camera.videoRef} className="session__video" muted playsInline />
+          <canvas ref={camera.canvasRef} className="session__canvas" />
 
-        {/* Calibration overlay */}
-        {metrics?.calibrating && (
-          <div className="session__calibration-overlay">
-            <div className="session__calibration-text">Look straight at the screen</div>
-            <div className="session__calibration-countdown">
-              {metrics.calibration_remaining?.toFixed(1)}s
-            </div>
-            <div className="session__calibration-hint">Calibrating head position...</div>
-          </div>
-        )}
-
-        {/* State badge */}
-        {metrics && !metrics.calibrating && (
-          <div className={`session__state-badge ${getStateBadgeClass(metrics.state, metrics.calibrating)}`}>
-            {formatState(metrics.state, metrics.calibrating)}
-          </div>
-        )}
-
-        {/* Pose readout */}
-        {metrics && (
-          <div className="session__pose">
-            <span>pitch {metrics.pitch?.toFixed(1)}°</span>
-            <span>yaw {metrics.yaw?.toFixed(1)}°</span>
-          </div>
-        )}
-      </div>
-
-      {/* Metrics panel */}
-      <div className="session__metrics">
-        {/* Focus score — deep work only */}
-        {mode === 'DEEP_WORK' && (
-          <div className="session__focus-score">
-            <div className="session__focus-label">Live Focus Score</div>
-            <div className="session__focus-value">
-              {metrics && !metrics.calibrating
-                ? `${(metrics.focus_score ?? 0).toFixed(1)}%`
-                : '—'}
-            </div>
-          </div>
-        )}
-
-        {/* Violation tally */}
-        <div className="session__metrics-header" style={{ marginTop: 20 }}>
-          {mode === 'PROCTOR' ? 'Live Violation Tally' : 'Distractions'}
-        </div>
-        <div className="session__violations">
-          {violations.map((v) => {
-            const count = metrics?.violations?.[v.key] ?? 0;
-            return (
-              <div className="session__violation-row" key={v.key}>
-                <span className="session__violation-label">{v.label}</span>
-                <span
-                  className={`session__violation-count ${
-                    count > 0 ? 'session__violation-count--active' : ''
-                  }`}
-                >
-                  {count}
-                </span>
+          {/* Calibration overlay */}
+          {metrics?.calibrating && (
+            <div className="session__calibration-overlay">
+              <div className="session__calibration-text">Look straight at the screen</div>
+              <div className="session__calibration-countdown">
+                {metrics.calibration_remaining?.toFixed(1)}s
               </div>
-            );
-          })}
+              <div className="session__calibration-hint">Calibrating head position...</div>
+            </div>
+          )}
+
+          {/* State badge */}
+          {metrics && !metrics.calibrating && (
+            <div className={`session__state-badge ${getStateBadgeClass(metrics.state, metrics.calibrating)}`}>
+              {formatState(metrics.state, metrics.calibrating)}
+            </div>
+          )}
+
+          {/* Pose readout */}
+          {metrics && (
+            <div className="session__pose">
+              <span>pitch {metrics.pitch?.toFixed(1)}°</span>
+              <span>yaw {metrics.yaw?.toFixed(1)}°</span>
+            </div>
+          )}
+        </div>
+
+        {/* Metrics sidebar */}
+        <div className="session__metrics">
+          <div className="session__metrics-header">
+            {mode === 'PROCTOR' ? 'Live Violation Tally' : 'Distractions'}
+          </div>
+
+          {/* Focus score — deep work only */}
+          {mode === 'DEEP_WORK' && (
+            <div className="session__focus-score">
+              <div className="session__focus-label">Live Focus Score</div>
+              <div className="session__focus-value">
+                {metrics && !metrics.calibrating
+                  ? `${(metrics.focus_score ?? 0).toFixed(1)}%`
+                  : '—'}
+              </div>
+            </div>
+          )}
+
+          {/* Violation tally */}
+          <div className="session__violations">
+            {violations.map((v) => {
+              const count = metrics?.violations?.[v.key] ?? 0;
+              return (
+                <div className="session__violation-row" key={v.key}>
+                  <span className="session__violation-label">{v.label}</span>
+                  <span
+                    className={`session__violation-count ${
+                      count > 0 ? 'session__violation-count--active' : ''
+                    }`}
+                  >
+                    {count}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
