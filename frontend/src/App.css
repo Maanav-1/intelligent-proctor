@@ -1,0 +1,16 @@
+/* ============================================
+   App — Layout shell
+   ============================================ */
+
+.app {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+  min-height: 100vh;
+}
+
+@media (max-width: 480px) {
+  .app {
+    padding: 0 16px;
+  }
+}

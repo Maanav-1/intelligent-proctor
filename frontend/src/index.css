@@ -1,0 +1,85 @@
+/* ============================================
+   Intelligent Proctor — Design System
+   Inspired by walzr.com aesthetic:
+   clean, editorial, tight tracking, white canvas
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
+
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --text: #000000;
+  --text-secondary: #666666;
+  --text-tertiary: #999999;
+  --border: #eeeeee;
+  --border-strong: #dddddd;
+  --hover-bg: #f9f9f9;
+
+  --red: #D64045;
+  --green: #2D9C5A;
+  --amber: #D4930D;
+  --blue: #3B82F6;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-body);
+  letter-spacing: -0.3px;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4 {
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+  font-weight: 600;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* ---- Utility ---- */
+
+::selection {
+  background: var(--text);
+  color: var(--bg);
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button {
+  font-family: var(--font-body);
+  letter-spacing: -0.3px;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+@media (max-width: 600px) {
+  html {
+    font-size: 15px;
+  }
+}
