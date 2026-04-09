@@ -262,6 +262,28 @@ class BehaviorAnalyzer:
         report += f"==========================================\n"
         return report
 
+    def get_session_report_json(self):
+        """Return session report as a structured dict for the web frontend."""
+        duration_sec = int(time.time() - self.session_start_time)
+        report = {
+            "mode": self.mode,
+            "date": datetime.now().isoformat(),
+            "duration_sec": duration_sec,
+            "total_frames": self.total_frames,
+            "violation_events": dict(self.violation_events),
+            "violation_frames": dict(self.violation_frames),
+        }
+        if self.mode == "DEEP_WORK":
+            focus_score = (self.focused_frames / self.total_frames * 100) if self.total_frames > 0 else 0
+            report["focus_score"] = round(focus_score, 1)
+            report["focused_frames"] = self.focused_frames
+            report["longest_focus_streak_sec"] = round(self.longest_focus_streak, 1)
+            report["longest_distraction_streak_sec"] = round(self.longest_distraction_streak, 1)
+            report["time_series"] = self.time_series
+        else:
+            report["total_infractions"] = sum(self.violation_events.values())
+        return report
+
     def save_report(self):
         if not os.path.exists("session_reports"):
             os.makedirs("session_reports")
