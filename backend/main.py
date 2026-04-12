@@ -17,8 +17,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from ultralytics import YOLO
 
-from session_manager import SessionManager
-from ws_handler import router as ws_router
+from backend.session_manager import SessionManager
+from backend.ws_handler import router as ws_router
 
 # ---------------------------------------------------------------------------
 # Resolve the YOLO model path (lives in project root, one level up)
