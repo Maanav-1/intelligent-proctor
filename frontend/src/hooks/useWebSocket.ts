@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback } from 'react';
 
-const WS_URL = 'ws://127.0.0.1:8000/ws/stream';
+const WS_URL = import.meta.env.VITE_WS_URL || 'ws://127.0.0.1:8000/ws/stream';
 
 export interface Metrics {
   type: string;

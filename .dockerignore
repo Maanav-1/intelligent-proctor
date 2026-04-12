@@ -1,0 +1,13 @@
+frontend/
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+venv/
+env/
+.venv/
+.DS_Store
+.git/
+session_reports/
+.env
+.env.*.local
