@@ -1,39 +1,55 @@
----
-title: Intelligent Proctor
-emoji: 👁️
-colorFrom: blue
-colorTo: indigo
-sdk: docker
-pinned: false
----
+# Intelligent Proctor
 
-# Intelligent Proctor Backend
+Intelligent Proctor is a real-time computer vision app that monitors behavior through your webcam. It has two modes: Proctor and Deep Work.
 
-This repository contains the backend for the Intelligent Proctor application, hosted via Hugging Face Spaces (Docker).
+**Proctor mode** is designed for exam or test environments. It watches for cheating-related items in the frame, specifically an extra person in the background, a book, a phone, or a student gazing off from the screen(for more than 2 secs). Each detected item is flagged as a violation.
 
-- **Framework:** FastAPI
-- **Model:** YOLOv8 (best.pt)
-- **Computer Vision:** OpenCV + MediaPipe
+**Deep Work mode** is for focus sessions. It tracks whether you are looking away from the screen and whether a phone is visible. It gives you a live focus score that updates in real time based on how distracted you are, along with a running tally of distractions as they happen.
 
-The web application securely connects to this backend via secure WebSockets to process frames in real-time.
+At the end of any session, the app shows a breakdown of every violation or distraction that was detected, along with how many frames each one appeared in. In Deep Work mode, you also get a focus graph showing how your focus held up over the course of the session.
 
-## Running locally
+## Model
 
-### 1. Backend
-Navigate to the `backend` directory, install requirements, and run the FastAPI server:
-```powershell
+The detection runs on a YOLOv8s model fine-tuned on a custom dataset of around 110,000 images.
+
+Dataset: https://universe.roboflow.com/maanavs-workspace/proctor_vision/dataset/1
+
+| Split | Images |
+|-------|--------|
+| Train | 10,626 (92%) |
+| Valid | 447 (4%) |
+| Test  | 473 (4%) |
+
+## Tech Stack
+
+- Backend: FastAPI + WebSockets
+- Frontend: React 19 + TypeScript (Vite)
+- Computer Vision: OpenCV + MediaPipe + Ultralytics YOLOv8
+
+## Running Locally
+
+You need Python 3.10+ and Node.js installed.
+
+**1. Start the backend**
+
+```bash
 cd backend
 pip install -r requirements.txt
 uvicorn main:app --reload
 ```
-This will start the backend on `http://localhost:8000`.
 
-### 2. Frontend
-Open a new terminal, navigate to the `frontend` directory, install dependencies, and start the development server:
-```powershell
+The backend will be running at `http://localhost:8000`.
+
+**2. Start the frontend**
+
+Open a new terminal from the project root:
+
+```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-Remember to copy `.env.example` to `.env` in the frontend directory to ensure the `VITE_API_URL` correctly targets your local backend.
+The frontend will be available at `http://localhost:5173`.
+
+Make sure the backend is running before you open the app, as it connects over WebSocket on load.

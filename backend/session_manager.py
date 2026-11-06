@@ -10,12 +10,22 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 
-import sys, os
-# Add project root so we can import the existing modules directly
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from head_pose import HeadPoseEstimator
 from behavior_analyzer import BehaviorAnalyzer
+
+
+# ---------------------------------------------------------------------------
+# Per-class confidence thresholds — 
+# Keys are YOLO class IDs as used by best.pt:
+#   0 = book   1 = extra_person   2 = laptop   3 = phone   4 = student
+# ---------------------------------------------------------------------------
+CLASS_CONF_THRESHOLDS: dict[int, float] = {
+    0: 0.85,   # book
+    1: 0.65,   # extra_person
+    3: 0.4,   # phone
+    4: 0.4,   # student
+}
 
 
 class SessionManager:
@@ -150,9 +160,10 @@ class SessionManager:
         for box in results.boxes:
             cid = int(box.cls[0])
             conf = float(box.conf[0])
-            if conf > 0.4:
-                if cid == 4 or cid == 1:
-                    people_count += 1
+            threshold = CLASS_CONF_THRESHOLDS.get(cid, 0.4)
+            if conf > threshold:
+                if cid == 1:
+                    people_count += 1  # extra-person count
                 if cid == 3:
                     phone_detected = True
                 if cid == 0:

@@ -79,7 +79,7 @@ export function Session({ mode, onSessionEnd, onBack }: Props) {
     return () => {
       if (frameIdRef.current) cancelAnimationFrame(frameIdRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  
   }, []);
 
   // Frame capture loop — start when both camera and WS are ready

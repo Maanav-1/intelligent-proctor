@@ -20,11 +20,9 @@ from ultralytics import YOLO
 from session_manager import SessionManager
 from ws_handler import router as ws_router
 
-# ---------------------------------------------------------------------------
-# Resolve the YOLO model path (lives in project root, one level up)
-# ---------------------------------------------------------------------------
-PROJECT_ROOT = os.path.join(os.path.dirname(__file__), "..")
-MODEL_PATH = os.path.join(PROJECT_ROOT, "best.pt")
+
+CURRENT_DIR = os.path.dirname(__file__)
+MODEL_PATH = os.path.join(CURRENT_DIR, "best.pt")
 
 
 # ---------------------------------------------------------------------------

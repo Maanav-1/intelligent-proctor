@@ -109,7 +109,7 @@ class BehaviorAnalyzer:
 
         # 2. Hard Object Violations
         if self.mode == "PROCTOR":
-            if people_count > 1:
+            if people_count > 0:
                 state = "VIOLATION: MULTIPLE_PEOPLE"
                 self.violation_frames["MULTIPLE_PEOPLE"] += 1
                 if not self.prev_multiple_people:
